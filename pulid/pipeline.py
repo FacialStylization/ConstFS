@@ -36,15 +36,15 @@ class PuLIDPipeline:
         self.device = 'cuda'
         sdxl_base_repo = 'stabilityai/stable-diffusion-xl-base-1.0'
         sdxl_lightning_repo = 'ByteDance/SDXL-Lightning'
+        config_path = "models/unet_config.json"
+        unet_path = "models/sdxl_lightning_4step_unet.safetensors"
         self.sdxl_base_repo = sdxl_base_repo
 
         # load base model
-        unet = UNet2DConditionModel.from_config(sdxl_base_repo, subfolder='unet').to(self.device, torch.float16)
-        unet.load_state_dict(
-            load_file(
-                hf_hub_download(sdxl_lightning_repo, 'sdxl_lightning_4step_unet.safetensors'), device=self.device
-            )
-        )
+        config = UNet2DConditionModel.load_config(config_path)
+        unet = UNet2DConditionModel.from_config(config).to(self.device, torch.float16)
+        unet.load_state_dict(load_file(unet_path, device=self.device))
+
         self.hack_unet_attn_layers(unet)
         self.pipe = StableDiffusionXLPipeline.from_pretrained(
             sdxl_base_repo, unet=unet, torch_dtype=torch.float16, variant="fp16"
@@ -84,7 +84,7 @@ class PuLIDPipeline:
         self.eva_transform_mean = eva_transform_mean
         self.eva_transform_std = eva_transform_std
         # antelopev2
-        snapshot_download('DIAMONIK7777/antelopev2', local_dir='models/antelopev2')
+        # snapshot_download('DIAMONIK7777/antelopev2', local_dir='models/antelopev2')
         self.app = FaceAnalysis(
             name='antelopev2', root='.', providers=['CUDAExecutionProvider', 'CPUExecutionProvider']
         )
@@ -123,7 +123,7 @@ class PuLIDPipeline:
         self.id_adapter_attn_layers = nn.ModuleList(unet.attn_processors.values())
 
     def load_pretrain(self):
-        hf_hub_download('guozinan/PuLID', 'pulid_v1.bin', local_dir='models')
+        # hf_hub_download('guozinan/PuLID', 'pulid_v1.bin', local_dir='models')
         ckpt_path = 'models/pulid_v1.bin'
         state_dict = torch.load(ckpt_path, map_location='cpu')
         state_dict_dict = {}

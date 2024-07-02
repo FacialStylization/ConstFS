@@ -7,7 +7,8 @@ import torch
 import random
 import numpy as np
 from PIL import Image
-from diffusers import ControlNetModel, StableDiffusionXLControlNetPipeline
+from diffusers import ControlNetModel, UNet2DConditionModel, StableDiffusionXLControlNetPipeline
+from safetensors.torch import load_file
 
 # import spaces
 import gradio as gr
@@ -28,16 +29,21 @@ dtype = torch.float16 if str(device).__contains__("cuda") else torch.float32
 base_model_path = "stabilityai/stable-diffusion-xl-base-1.0"
 image_encoder_path = "IP-Adapter/sdxl_models/image_encoder"
 ip_ckpt = "IP-Adapter/sdxl_models/ip-adapter_sdxl.bin"
-
+config_path = "models/unet_config.json"
+unet_path = "models/sdxl_lightning_4step_unet.safetensors"
 controlnet_path = "diffusers/controlnet-canny-sdxl-1.0"
 controlnet = ControlNetModel.from_pretrained(controlnet_path, use_safetensors=False, torch_dtype=torch.float16).to(device)
+
+config = UNet2DConditionModel.load_config(config_path)
+unet = UNet2DConditionModel.from_config(config).to(device, torch.float16)
+# unet.load_state_dict(load_file(unet_path, device=device))
 
 # load SDXL pipeline
 pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
     base_model_path,
     controlnet=controlnet,
     torch_dtype=torch.float16,
-    add_watermarker=False,
+    add_watermarker=False
 )
 pipe.enable_vae_tiling()
 
@@ -226,4 +232,4 @@ with block:
                     neg_content_scale], 
             outputs=[generated_image])
 
-block.launch()
+block.launch(server_port=6006)

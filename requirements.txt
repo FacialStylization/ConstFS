@@ -19,3 +19,5 @@ ftfy
 facexlib
 insightface
 onnxruntime-gpu
+tb-nightly
+basicsr
