@@ -46,15 +46,15 @@ class PuLIDPipeline:
         unet.load_state_dict(load_file(unet_path, device=self.device))
 
         self.hack_unet_attn_layers(unet)
-        self.pipe = StableDiffusionXLPipeline.from_pretrained(
-            sdxl_base_repo, unet=unet, torch_dtype=torch.float16, variant="fp16"
-        ).to(self.device)
-        self.pipe.watermark = None
+        # self.pipe = StableDiffusionXLPipeline.from_pretrained(
+        #     sdxl_base_repo, unet=unet, torch_dtype=torch.float16, variant="fp16"
+        # ).to(self.device)
+        # self.pipe.watermark = None
 
         # scheduler
-        self.pipe.scheduler = DPMSolverMultistepScheduler.from_config(
-            self.pipe.scheduler.config, timestep_spacing="trailing"
-        )
+        # self.pipe.scheduler = DPMSolverMultistepScheduler.from_config(
+        #     self.pipe.scheduler.config, timestep_spacing="trailing"
+        # )
 
         # ID adapters
         self.id_adapter = IDEncoder().to(self.device)

@@ -75,7 +75,7 @@ class IPAdapter:
         self.set_ip_adapter()
 
         # load image encoder
-        self.image_encoder = CLIPVisionModelWithProjection.from_pretrained(self.image_encoder_path, ignore_mismatched_sizes=True).to(
+        self.image_encoder = CLIPVisionModelWithProjection.from_pretrained(self.image_encoder_path, use_safetensors=True, ignore_mismatched_sizes=True).to(
             self.device, dtype=torch.float16
         )
         self.clip_image_processor = CLIPImageProcessor()

@@ -2,8 +2,10 @@ __pycache__
 eva_clip/__pycache__
 gradio_cached_examples
 ip_adapter/__pycache__
+ip_adapter/.ipynb_checkpoints
 IP-Adapter
 models
 pulid/__pycache__
+pulid/.ipynb_checkpoints
 PuLID
 .ipynb_checkpoints
