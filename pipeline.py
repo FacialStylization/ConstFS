@@ -42,6 +42,8 @@ class IPAdapterXL(IPAdapter):
         
         self.set_scale(scale)
 
+        # Set the number of prompts based on the number of images: 
+        # 1 if there's a single image, or the number of images if there's a list of images.
         num_prompts = 1 if isinstance(pil_image, Image.Image) else len(pil_image)
 
         if prompt is None:
@@ -54,6 +56,10 @@ class IPAdapterXL(IPAdapter):
         if not isinstance(negative_prompt, List):
             negative_prompt = [negative_prompt] * num_prompts
         
+        # Handle the generation and assignment of negative content embeddings. 
+        # If `neg_content_emb` is None and `neg_content_prompt` is not None, 
+        # encode the negative content prompt and scale the pooled prompt embeddings. 
+        # If `neg_content_emb` is not None, assign None to `pooled_prompt_embeds_`.
         if neg_content_emb is None:
             if neg_content_prompt is not None:
                 with torch.inference_mode():
@@ -70,10 +76,12 @@ class IPAdapterXL(IPAdapter):
                     )
                     pooled_prompt_embeds_ *= neg_content_scale
             else:
-                pooled_prompt_embeds_ = neg_content_emb
+                pooled_prompt_embeds_ = neg_content_emb # same as None
         else:
             pooled_prompt_embeds_ = None
 
+        # Get the image prompt embeddings and unconditional image prompt embeddings
+        # by calling the `get_image_embeds` method with the PIL image and the pooled prompt embeddings.
         image_prompt_embeds, uncond_image_prompt_embeds = self.get_image_embeds(pil_image, content_prompt_embeds=pooled_prompt_embeds_)
         # print('pooled_prompt_embeds_', pooled_prompt_embeds_)
         bs_embed, seq_len, _ = image_prompt_embeds.shape
