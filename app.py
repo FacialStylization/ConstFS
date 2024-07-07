@@ -89,6 +89,36 @@ def resize_img(
         input_image = Image.fromarray(res)
     return input_image
 
+def generate_target_blocks(style_input_str, layout_input_str, is_style_only):
+    up_blocks_str = "up_blocks"
+    down_blocks_str = "down_blocks"
+    attention_str = "attentions.1"
+    
+    if style_input_str.isdigit():
+        style_target_block = up_blocks_str + '.' + style_input_str + '.' + attention_str
+        style_target_blocks = [style_target_block]
+        if is_style_only:
+            return style_target_blocks
+        else:
+            if layout_input_str.isdigit():
+                layout_target_block = down_blocks_str + '.' + layout_input_str + '.' + attention_str
+                style_target_blocks.append(layout_target_block)
+            else:
+                layout_target_blocks = [down_blocks_str + '.' + num.strip() + '.' + attention_str for num in layout_input_str.split(',')]
+                style_target_blocks.extend(layout_target_blocks)
+            return style_target_blocks
+    else:
+        style_target_blocks = [up_blocks_str + '.' + num.strip() + '.' + attention_str for num in style_input_str.split(',')]
+        if is_style_only:
+            return style_target_blocks
+        if layout_input_str.isdigit():
+            layout_target_block = down_blocks_str + '.' + layout_input_str + '.' + attention_str
+            style_target_blocks.append(layout_target_block)
+        else:
+            layout_target_blocks = [down_blocks_str + '.' + num.strip() + '.' + attention_str for num in layout_input_str.split(',')]
+            style_target_blocks.extend(layout_target_blocks)
+        return style_target_blocks
+
 # @spaces.GPU(enable_queue=True)
 def create_image(image_pil,
                  input_image,
@@ -100,6 +130,8 @@ def create_image(image_pil,
                  num_samples,
                  num_inference_steps,
                  seed,
+                 style_blocks="0",
+                 layout_blocks="2",
                  target="Load only style blocks",
                  neg_content_prompt=None,
                  neg_content_scale=0):
@@ -109,10 +141,12 @@ def create_image(image_pil,
         ip_model = IPAdapterXL(pipe, image_encoder_path, ip_ckpt, device, target_blocks=["blocks"])
     elif target=="Load only style blocks":
         # target_blocks=["up_blocks.0.attentions.1"] for style blocks only
-        ip_model = IPAdapterXL(pipe, image_encoder_path, ip_ckpt, device, target_blocks=["up_blocks.0.attentions.1"])
+        target_blocks_gen = generate_target_blocks(style_blocks, layout_blocks, True)
+        ip_model = IPAdapterXL(pipe, image_encoder_path, ip_ckpt, device, target_blocks=target_blocks_gen)
     elif target == "Load style+layout block":
         # target_blocks = ["up_blocks.0.attentions.1", "down_blocks.2.attentions.1"] # for style+layout blocks
-        ip_model = IPAdapterXL(pipe, image_encoder_path, ip_ckpt, device, target_blocks=["up_blocks.0.attentions.1", "down_blocks.2.attentions.1"])
+        target_blocks_gen = generate_target_blocks(style_blocks, layout_blocks, False)
+        ip_model = IPAdapterXL(pipe, image_encoder_path, ip_ckpt, device, target_blocks=target_blocks_gen)
     
     if input_image is not None:
         input_image = resize_img(input_image, max_side=1024)
@@ -203,6 +237,10 @@ with block:
                 prompt = gr.Textbox(label="Prompt",
                                     value="masterpiece, best quality, high quality")
                 
+                style_blocks = gr.Textbox(label="Style Blocks", value="0")
+
+                layout_blocks = gr.Textbox(label="Layout Blocks", value="2")
+
                 scale = gr.Slider(minimum=0,maximum=2.0, step=0.01,value=1.0, label="Scale")
                 
                 generate_button = gr.Button("Generate Image")
@@ -227,6 +265,8 @@ with block:
                     num_samples,
                     num_inference_steps,
                     seed,
+                    style_blocks,
+                    layout_blocks,
                     target,
                     neg_content_prompt,
                     neg_content_scale], 
