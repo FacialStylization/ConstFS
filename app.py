@@ -15,6 +15,8 @@ import gradio as gr
 
 from pipeline import IPAdapterXL
 
+from utils.image_captioner import ImageCaptioner
+
 import os
 # os.system("git lfs install")
 # os.system("git clone https://huggingface.co/h94/IP-Adapter")
@@ -131,7 +133,7 @@ def create_image(image_pil,
                  num_inference_steps,
                  seed,
                  style_blocks="0",
-                 layout_blocks="2",
+                 layout_blocks="1",
                  target="Load only style blocks",
                  neg_content_prompt=None,
                  neg_content_scale=0):
@@ -190,10 +192,22 @@ def create_image(image_pil,
                                 )
     return images
 
+def create_prompt(style_image_pil, content_image_pil):
+    style_image_path = pil_to_path(style_image_pil, "style_image")
+    content_image_path = pil_to_path(content_image_pil, "content_image")
+    image_captioner = ImageCaptioner(style_image_path, content_image_path)
+    prompt = image_captioner.generate_prompt()
+    return prompt
+
 def pil_to_cv2(image_pil):
     image_np = np.array(image_pil)
     image_cv2 = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
     return image_cv2
+
+def pil_to_path(image_pil, image_name):
+    image_path = f"{image_name}.jpg"
+    image_pil.save(image_path)
+    return image_path
 
 # Description
 title = r"""
@@ -239,13 +253,24 @@ with block:
                 
                 style_blocks = gr.Textbox(label="Style Blocks", value="0")
 
-                layout_blocks = gr.Textbox(label="Layout Blocks", value="2")
+                layout_blocks = gr.Textbox(label="Layout Blocks", value="1")
 
                 scale = gr.Slider(minimum=0,maximum=2.0, step=0.01,value=1.0, label="Scale")
                 
+                prompt_generate_button = gr.Button("Generate Prompt")
+
                 generate_button = gr.Button("Generate Image")
                 
                 generated_image = gr.Gallery(label="Generated Image")
+
+        prompt_generate_button.click(
+            fn=create_prompt,
+            inputs=[image_pil, src_image_pil],
+            outputs=[prompt],
+            queue=False,
+            api_name=False,
+            show_progress=True
+        )
 
         generate_button.click(
             fn=randomize_seed_fn,

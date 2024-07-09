@@ -21,3 +21,4 @@ insightface
 onnxruntime-gpu
 tb-nightly
 basicsr
+dashscope
