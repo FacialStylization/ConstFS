@@ -6,7 +6,7 @@ import numpy as np
 from diffusers import StableDiffusionXLPipeline, ControlNetModel
 from PIL import Image
 
-from ip_adapter import IPAdapterPlusXL
+from pipeline import IPAdapterXL
 
 def resize_img(
     input_image,
@@ -64,7 +64,7 @@ def style_transfer(style_path, content_path):
     # target_blocks=["block"] for original IP-Adapter
     # target_blocks=["up_blocks.0.attentions.1"] for style blocks only
     target_blocks = ["up_blocks.0.attentions.1", "down_blocks.2.attentions.1"] # for style+layout blocks
-    ip_model = IPAdapterPlusXL(pipe, image_encoder_path, ip_ckpt, device, num_tokens=16, target_blocks=target_blocks)
+    ip_model = IPAdapterXL(pipe, image_encoder_path, ip_ckpt, device, num_tokens=16, target_blocks=target_blocks)
 
     image = Image.open(content_path)
     image = resize_img(image, max_side=1024)
