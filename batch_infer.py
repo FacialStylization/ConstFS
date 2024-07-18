@@ -75,6 +75,8 @@ class StyleTransfer:
     def generate(self):
         style_files = os.listdir(self.style_folder_path)
         for style_file in style_files:
+            if not style_file.endswith(('.jpg', '.jpeg', '.png', '.bmp')):
+                continue
             style_path = os.path.join(self.style_folder_path, style_file)
             content_file = style_file.split(".")[0] + ".jpg"
             content_path = os.path.join(self.content_folder_path, content_file)
