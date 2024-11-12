@@ -23,7 +23,7 @@ tb-nightly
 basicsr
 dashscope
 git+https://github.com/matthias-wright/art-fid.git
-lpips
 pytorch-fid
 git+https://github.com/openai/CLIP.git
 clip-score
+insightface
