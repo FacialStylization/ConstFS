@@ -1,9 +1,7 @@
 import argparse
 import os
-import lpips
-from torchvision import transforms
-from PIL import Image
 from tools.metrics.arcface_metric import ArcFaceMetric
+
 
 def evaluate(style_images_folder, content_images_folder, stylized_images_folder):
     # Evaluate art_fid
@@ -16,13 +14,18 @@ def evaluate(style_images_folder, content_images_folder, stylized_images_folder)
 
     # Evaluate arcface_distance
     arc_margin_product = ArcFaceMetric()
-    arc_margin_product.evaluate_folders(style_images_folder, stylized_images_folder)
+    arc_margin_product.evaluate_folders(content_images_folder, stylized_images_folder)
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Evaluate style transfer results')
-    parser.add_argument('--style_images', type=str, help='Path to style images folder')
-    parser.add_argument('--content_images', type=str, help='Path to content images folder')
-    parser.add_argument('--stylized_images', type=str, help='Path to stylized images folder')
+    parser = argparse.ArgumentParser(description="Evaluate style transfer results")
+    parser.add_argument("--style_images", type=str, help="Path to style images folder")
+    parser.add_argument(
+        "--content_images", type=str, help="Path to content images folder"
+    )
+    parser.add_argument(
+        "--stylized_images", type=str, help="Path to stylized images folder"
+    )
     args = parser.parse_args()
 
     evaluate(args.style_images, args.content_images, args.stylized_images)
