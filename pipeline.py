@@ -18,9 +18,75 @@ def get_generator(seed, device):
 
     return generator
 
+def split_tiles(embeds, num_split):
+    _, H, W, _ = embeds.shape
+    out = []
+    for x in embeds:
+        x = x.unsqueeze(0)
+        h, w = H // num_split, W // num_split
+        x_split = torch.cat([x[:, i*h:(i+1)*h, j*w:(j+1)*w, :] for i in range(num_split) for j in range(num_split)], dim=0)    
+        out.append(x_split)
+        
+    x_split = torch.stack(out, dim=0)
+        
+    return x_split
+
+def merge_embeddings(x, tiles):
+    chunk_size = tiles*tiles
+    x = x.split(chunk_size)
+
+    out = []
+    for embeds in x:
+        num_tiles = embeds.shape[0]
+        grid_size = int(num_tiles ** 0.5)
+        tile_size = int(embeds.shape[1] ** 0.5)
+        reshaped = embeds.reshape(grid_size, grid_size, tile_size, tile_size)
+            
+        # Merge the tiles
+        merged = torch.cat([torch.cat([reshaped[i, j] for j in range(grid_size)], dim=1) 
+                            for i in range(grid_size)], dim=0)
+            
+        merged = merged.unsqueeze(0)  # Shape: [1, grid_size*tile_size, grid_size*tile_size]
+            
+        # Pool to original size
+        pooled = torch.nn.functional.adaptive_avg_pool2d(merged, (tile_size, tile_size))  # pool to [1, tile_size, tile_size]
+        pooled = pooled.flatten(1)  # flatten to [1, tile_size^2]
+        out.append(pooled)
+    out = torch.cat(out, dim=0)
+        
+    return out
+
 class IPAdapterXL(IPAdapter):
+
     """SDXL"""
 
+    @torch.inference_mode()
+    def get_image_embeds(self, pil_image=None, clip_image_embeds=None, content_prompt_embeds=None, tiles=1):
+        if pil_image is not None:
+            if isinstance(pil_image, Image.Image):
+                pil_image = [pil_image]
+            clip_image = self.clip_image_processor(images=pil_image, return_tensors="pt").pixel_values
+            clip_image = clip_image.to(self.device, dtype=torch.float16)
+            clip_image_embeds = self.image_encoder(clip_image, output_hidden_states=True).hidden_states[-2]
+        else:
+            clip_image_embeds = clip_image_embeds.to(self.device, dtype=torch.float16)
+        
+        if content_prompt_embeds is not None:
+            clip_image_embeds = clip_image_embeds - content_prompt_embeds
+
+        if tiles > 1:
+            image_split = split_tiles(clip_image_embeds, tiles)
+            embeds_split = []
+            for tile in image_split:
+                tile_embeds = self.image_encoder(tile, output_hidden_states=True).hidden_states[-2]
+                embeds_split.append(tile_embeds)
+            clip_image_embeds = torch.cat(embeds_split, dim=0)
+            clip_image_embeds = merge_embeddings(clip_image_embeds, tiles)
+
+        image_prompt_embeds = self.image_proj_model(clip_image_embeds)
+        uncond_image_prompt_embeds = self.image_proj_model(torch.zeros_like(clip_image_embeds))
+        return image_prompt_embeds, uncond_image_prompt_embeds
+    
     def generate(
         self,
         pil_image,
