@@ -34,7 +34,7 @@ ip_ckpt = "IP-Adapter/sdxl_models/ip-adapter_sdxl.bin"
 config_path = "models/unet_config.json"
 unet_path = "models/sdxl_lightning_4step_unet.safetensors"
 controlnet_path = "models/canny"
-controlnet = ControlNetModel.from_pretrained(controlnet_path, use_safetensors=False, torch_dtype=torch.float16).to(device)
+controlnet = ControlNetModel.from_pretrained("Eugeoter/noob-sdxl-controlnet-softedge_hed")
 
 # config = UNet2DConditionModel.load_config(config_path)
 # unet = UNet2DConditionModel.from_config(config).to(device, torch.float16)
