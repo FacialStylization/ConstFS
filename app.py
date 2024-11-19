@@ -32,9 +32,8 @@ base_model_path = "stabilityai/stable-diffusion-xl-base-1.0"
 image_encoder_path = "IP-Adapter/sdxl_models/image_encoder"
 ip_ckpt = "IP-Adapter/sdxl_models/ip-adapter_sdxl.bin"
 config_path = "models/unet_config.json"
-unet_path = "models/sdxl_lightning_4step_unet.safetensors"
-controlnet_path = "models/canny"
-controlnet = ControlNetModel.from_pretrained("Eugeoter/noob-sdxl-controlnet-softedge_hed")
+controlnet_path = "models/hed"
+controlnet = ControlNetModel.from_pretrained(controlnet_path, use_safetensors=True, torch_dtype=torch.float32).to(device)
 
 # config = UNet2DConditionModel.load_config(config_path)
 # unet = UNet2DConditionModel.from_config(config).to(device, torch.float16)
