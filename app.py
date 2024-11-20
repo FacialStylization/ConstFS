@@ -225,7 +225,7 @@ with block:
             with gr.Column():
                 with gr.Column():
                     src_image_pil = gr.Image(label="Source Image (optional)", type='pil')
-                    control_scale = gr.Slider(minimum=0,maximum=1.0, step=0.01,value=0.5, label="Controlnet conditioning scale")
+                    control_scale = gr.Slider(minimum=0,maximum=1.0, step=0.01,value=0.65, label="Controlnet conditioning scale")
                     
                     n_prompt = gr.Textbox(label="Neg Prompt", value="text, watermark, lowres, low quality, worst quality, deformed, glitch, low contrast, noisy, saturation, blurry")
                     
@@ -250,9 +250,9 @@ with block:
                 prompt = gr.Textbox(label="Prompt",
                                     value="masterpiece, best quality, high quality")
                 
-                style_blocks = gr.Textbox(label="Style Blocks", value="0")
+                style_blocks = gr.Textbox(label="Style Blocks", value="0, 2, 3")
 
-                layout_blocks = gr.Textbox(label="Layout Blocks", value="1")
+                layout_blocks = gr.Textbox(label="Layout Blocks", value="1, 3")
 
                 scale = gr.Slider(minimum=0,maximum=2.0, step=0.01,value=1.0, label="Scale")
                 
