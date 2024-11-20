@@ -68,7 +68,7 @@ class IPAdapterXL(IPAdapter):
                 pil_image = [pil_image]
             clip_image = self.clip_image_processor(images=pil_image, return_tensors="pt").pixel_values
             clip_image = clip_image.to(self.device, dtype=torch.float16)
-            clip_image_embeds = self.image_encoder(clip_image, output_hidden_states=True).hidden_states[-2]
+            clip_image_embeds = self.image_encoder(clip_image.to(self.device, dtype=torch.float16)).image_embeds
             print(f"first clip_image_embeds shape: {clip_image_embeds.shape}")
         else:
             clip_image_embeds = clip_image_embeds.to(self.device, dtype=torch.float16)
@@ -155,7 +155,7 @@ class IPAdapterXL(IPAdapter):
 
         # Get the image prompt embeddings and unconditional image prompt embeddings
         # by calling the `get_image_embeds` method with the PIL image and the pooled prompt embeddings.
-        image_prompt_embeds, uncond_image_prompt_embeds = self.get_image_embeds(pil_image, content_prompt_embeds=pooled_prompt_embeds_)
+        image_prompt_embeds, uncond_image_prompt_embeds = self.get_image_embeds(pil_image, content_prompt_embeds=pooled_prompt_embeds_, tiles=1)
         # print('pooled_prompt_embeds_', pooled_prompt_embeds_)
         bs_embed, seq_len, _ = image_prompt_embeds.shape
         image_prompt_embeds = image_prompt_embeds.repeat(1, num_samples, 1)
