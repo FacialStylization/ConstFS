@@ -67,14 +67,14 @@ class IPAdapterXL(IPAdapter):
     #         if isinstance(pil_image, Image.Image):
     #             pil_image = [pil_image]
     #         clip_image = self.clip_image_processor(images=pil_image, return_tensors="pt").pixel_values
-    #         clip_image = clip_image.to(self.device, dtype=torch.float32)
+    #         clip_image = clip_image.to(self.device, dtype=torch.float16)
     #         clip_image_embeds = self.image_encoder(clip_image).image_embeds
     #         print(f"first clip_image_embeds shape: {clip_image_embeds.shape}")
     #     else:
-    #         clip_image_embeds = clip_image_embeds.to(self.device, dtype=torch.float32)
+    #         clip_image_embeds = clip_image_embeds.to(self.device, dtype=torch.float16)
         
     #     if content_prompt_embeds is not None:
-    #         clip_image_embeds = clip_image_embeds - content_prompt_embeds.to(self.device, dtype=torch.float32)
+    #         clip_image_embeds = clip_image_embeds - content_prompt_embeds.to(self.device, dtype=torch.float16)
     #         print(f"second clip_image_embeds shape: {clip_image_embeds.shape}")
 
     #     if tiles > 1:

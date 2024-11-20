@@ -76,7 +76,7 @@ class IPAdapter:
 
         # load image encoder
         self.image_encoder = CLIPVisionModelWithProjection.from_pretrained(self.image_encoder_path, use_safetensors=True, ignore_mismatched_sizes=True).to(
-            self.device, dtype=torch.float32
+            self.device, dtype=torch.float16
         )
         self.clip_image_processor = CLIPImageProcessor()
         # image proj model
@@ -89,7 +89,7 @@ class IPAdapter:
             cross_attention_dim=self.pipe.unet.config.cross_attention_dim,
             clip_embeddings_dim=self.image_encoder.config.projection_dim,
             clip_extra_context_tokens=self.num_tokens,
-        ).to(self.device, dtype=torch.float32)
+        ).to(self.device, dtype=torch.float16)
         return image_proj_model
 
     def set_ip_adapter(self):
@@ -119,7 +119,7 @@ class IPAdapter:
                         cross_attention_dim=cross_attention_dim,
                         scale=1.0,
                         num_tokens=self.num_tokens,
-                    ).to(self.device, dtype=torch.float32)
+                    ).to(self.device, dtype=torch.float16)
                 else:
                     attn_procs[name] = IPAttnProcessor(
                         hidden_size=hidden_size,
@@ -127,7 +127,7 @@ class IPAdapter:
                         scale=1.0,
                         num_tokens=self.num_tokens,
                         skip=True
-                    ).to(self.device, dtype=torch.float32)
+                    ).to(self.device, dtype=torch.float16)
         unet.set_attn_processor(attn_procs)
         if hasattr(self.pipe, "controlnet"):
             if isinstance(self.pipe.controlnet, MultiControlNetModel):
@@ -157,9 +157,9 @@ class IPAdapter:
             if isinstance(pil_image, Image.Image):
                 pil_image = [pil_image]
             clip_image = self.clip_image_processor(images=pil_image, return_tensors="pt").pixel_values
-            clip_image_embeds = self.image_encoder(clip_image.to(self.device, dtype=torch.float32)).image_embeds
+            clip_image_embeds = self.image_encoder(clip_image.to(self.device, dtype=torch.float16)).image_embeds
         else:
-            clip_image_embeds = clip_image_embeds.to(self.device, dtype=torch.float32)
+            clip_image_embeds = clip_image_embeds.to(self.device, dtype=torch.float16)
         
         if content_prompt_embeds is not None:
             clip_image_embeds = clip_image_embeds - content_prompt_embeds
@@ -339,7 +339,7 @@ class IPAdapterPlus(IPAdapter):
             embedding_dim=self.image_encoder.config.hidden_size,
             output_dim=self.pipe.unet.config.cross_attention_dim,
             ff_mult=4,
-        ).to(self.device, dtype=torch.float32)
+        ).to(self.device, dtype=torch.float16)
         return image_proj_model
 
     @torch.inference_mode()
@@ -347,7 +347,7 @@ class IPAdapterPlus(IPAdapter):
         if isinstance(pil_image, Image.Image):
             pil_image = [pil_image]
         clip_image = self.clip_image_processor(images=pil_image, return_tensors="pt").pixel_values
-        clip_image = clip_image.to(self.device, dtype=torch.float32)
+        clip_image = clip_image.to(self.device, dtype=torch.float16)
         clip_image_embeds = self.image_encoder(clip_image, output_hidden_states=True).hidden_states[-2]
         image_prompt_embeds = self.image_proj_model(clip_image_embeds)
         uncond_clip_image_embeds = self.image_encoder(
@@ -364,7 +364,7 @@ class IPAdapterFull(IPAdapterPlus):
         image_proj_model = MLPProjModel(
             cross_attention_dim=self.pipe.unet.config.cross_attention_dim,
             clip_embeddings_dim=self.image_encoder.config.hidden_size,
-        ).to(self.device, dtype=torch.float32)
+        ).to(self.device, dtype=torch.float16)
         return image_proj_model
 
 
@@ -381,7 +381,7 @@ class IPAdapterPlusXL(IPAdapter):
             embedding_dim=self.image_encoder.config.hidden_size,
             output_dim=self.pipe.unet.config.cross_attention_dim,
             ff_mult=4,
-        ).to(self.device, dtype=torch.float32)
+        ).to(self.device, dtype=torch.float16)
         return image_proj_model
 
     @torch.inference_mode()
@@ -389,7 +389,7 @@ class IPAdapterPlusXL(IPAdapter):
         if isinstance(pil_image, Image.Image):
             pil_image = [pil_image]
         clip_image = self.clip_image_processor(images=pil_image, return_tensors="pt").pixel_values
-        clip_image = clip_image.to(self.device, dtype=torch.float32)
+        clip_image = clip_image.to(self.device, dtype=torch.float16)
         clip_image_embeds = self.image_encoder(clip_image, output_hidden_states=True).hidden_states[-2]
         image_prompt_embeds = self.image_proj_model(clip_image_embeds)
         uncond_clip_image_embeds = self.image_encoder(
