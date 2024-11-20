@@ -74,7 +74,7 @@ class IPAdapterXL(IPAdapter):
             clip_image_embeds = clip_image_embeds.to(self.device, dtype=torch.float16)
         
         if content_prompt_embeds is not None:
-            clip_image_embeds = clip_image_embeds - content_prompt_embeds
+            clip_image_embeds = clip_image_embeds - content_prompt_embeds.to(self.device, dtype=torch.float16)
             print(f"second clip_image_embeds shape: {clip_image_embeds.shape}")
 
         if tiles > 1:
