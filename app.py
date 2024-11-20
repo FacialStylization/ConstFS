@@ -25,7 +25,7 @@ import os
 # global variable
 MAX_SEED = np.iinfo(np.int32).max
 device = "cuda" if torch.cuda.is_available() else "cpu"
-dtype = torch.float16 if str(device).__contains__("cuda") else torch.float32
+dtype = torch.float32
 
 # initialization
 base_model_path = "stabilityai/stable-diffusion-xl-base-1.0"
@@ -43,7 +43,7 @@ controlnet = ControlNetModel.from_pretrained(controlnet_path, use_safetensors=Tr
 pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
     base_model_path,
     controlnet=controlnet,
-    torch_dtype=torch.float16,
+    torch_dtype=torch.float32,
     add_watermarker=False
 )
 pipe.enable_vae_tiling()
