@@ -32,7 +32,7 @@ def split_tiles(embeds, num_split):
     return x_split
 
 def merge_embeddings(x, tiles):
-    chunk_size = tiles*tiles
+    chunk_size = tiles * tiles
     x = x.split(chunk_size)
 
     out = []
@@ -40,20 +40,21 @@ def merge_embeddings(x, tiles):
         num_tiles = embeds.shape[0]
         grid_size = int(num_tiles ** 0.5)
         tile_size = int(embeds.shape[1] ** 0.5)
+        
+        # Reshape to [grid_size, grid_size, tile_size, tile_size]
         reshaped = embeds.reshape(grid_size, grid_size, tile_size, tile_size)
-            
+        
         # Merge the tiles
         merged = torch.cat([torch.cat([reshaped[i, j] for j in range(grid_size)], dim=1) 
                             for i in range(grid_size)], dim=0)
-            
-        merged = merged.unsqueeze(0)  # Shape: [1, grid_size*tile_size, grid_size*tile_size]
-            
-        # Pool to original size
-        pooled = torch.nn.functional.adaptive_avg_pool2d(merged, (tile_size, tile_size))  # pool to [1, tile_size, tile_size]
-        pooled = pooled.flatten(1)  # flatten to [1, tile_size^2]
-        out.append(pooled)
-    out = torch.cat(out, dim=0)
         
+        # Flatten to [1, grid_size * tile_size * grid_size * tile_size]
+        merged = merged.view(1, -1)
+        
+        out.append(merged)
+    
+    out = torch.cat(out, dim=0)
+    
     return out
 
 class IPAdapterXL(IPAdapter):
@@ -82,6 +83,8 @@ class IPAdapterXL(IPAdapter):
                 embeds_split.append(tile_embeds)
             clip_image_embeds = torch.cat(embeds_split, dim=0)
             clip_image_embeds = merge_embeddings(clip_image_embeds, tiles)
+
+        print(f"clip_image_embeds shape: {clip_image_embeds.shape}")
 
         image_prompt_embeds = self.image_proj_model(clip_image_embeds)
         uncond_image_prompt_embeds = self.image_proj_model(torch.zeros_like(clip_image_embeds))
