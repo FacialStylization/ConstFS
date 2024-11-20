@@ -69,11 +69,13 @@ class IPAdapterXL(IPAdapter):
             clip_image = self.clip_image_processor(images=pil_image, return_tensors="pt").pixel_values
             clip_image = clip_image.to(self.device, dtype=torch.float16)
             clip_image_embeds = self.image_encoder(clip_image, output_hidden_states=True).hidden_states[-2]
+            print(f"first clip_image_embeds shape: {clip_image_embeds.shape}")
         else:
             clip_image_embeds = clip_image_embeds.to(self.device, dtype=torch.float16)
         
         if content_prompt_embeds is not None:
             clip_image_embeds = clip_image_embeds - content_prompt_embeds
+            print(f"second clip_image_embeds shape: {clip_image_embeds.shape}")
 
         if tiles > 1:
             image_split = split_tiles(clip_image_embeds, tiles)
@@ -82,9 +84,11 @@ class IPAdapterXL(IPAdapter):
                 tile_embeds = self.image_encoder(tile, output_hidden_states=True).hidden_states[-2]
                 embeds_split.append(tile_embeds)
             clip_image_embeds = torch.cat(embeds_split, dim=0)
+            print(f"third clip_image_embeds shape: {clip_image_embeds.shape}")
             clip_image_embeds = merge_embeddings(clip_image_embeds, tiles)
+            print(f"fouth last clip_image_embeds shape: {clip_image_embeds.shape}")
 
-        print(f"clip_image_embeds shape: {clip_image_embeds.shape}")
+        print(f"last clip_image_embeds shape: {clip_image_embeds.shape}")
 
         image_prompt_embeds = self.image_proj_model(clip_image_embeds)
         uncond_image_prompt_embeds = self.image_proj_model(torch.zeros_like(clip_image_embeds))
