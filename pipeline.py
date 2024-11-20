@@ -155,7 +155,7 @@ class IPAdapterXL(IPAdapter):
 
         # Get the image prompt embeddings and unconditional image prompt embeddings
         # by calling the `get_image_embeds` method with the PIL image and the pooled prompt embeddings.
-        image_prompt_embeds, uncond_image_prompt_embeds = self.get_image_embeds(pil_image, content_prompt_embeds=pooled_prompt_embeds_, tiles=1)
+        image_prompt_embeds, uncond_image_prompt_embeds = self.get_image_embeds(pil_image, content_prompt_embeds=pooled_prompt_embeds_)
         # print('pooled_prompt_embeds_', pooled_prompt_embeds_)
         bs_embed, seq_len, _ = image_prompt_embeds.shape
         image_prompt_embeds = image_prompt_embeds.repeat(1, num_samples, 1)
