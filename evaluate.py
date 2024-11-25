@@ -2,6 +2,8 @@ import argparse
 import os
 from tools.metrics.arcface_metric import ArcFaceMetric
 
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
 
 def evaluate(style_images_folder, content_images_folder, stylized_images_folder):
     # Evaluate art_fid
