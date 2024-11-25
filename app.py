@@ -25,16 +25,15 @@ import os
 # global variable
 MAX_SEED = np.iinfo(np.int32).max
 device = "cuda" if torch.cuda.is_available() else "cpu"
-dtype = torch.float16 if str(device).__contains__("cuda") else torch.float32
+dtype = torch.float32
 
 # initialization
 base_model_path = "stabilityai/stable-diffusion-xl-base-1.0"
 image_encoder_path = "IP-Adapter/sdxl_models/image_encoder"
 ip_ckpt = "IP-Adapter/sdxl_models/ip-adapter_sdxl.bin"
 config_path = "models/unet_config.json"
-unet_path = "models/sdxl_lightning_4step_unet.safetensors"
 controlnet_path = "models/canny"
-controlnet = ControlNetModel.from_pretrained(controlnet_path, use_safetensors=False, torch_dtype=torch.float16).to(device)
+controlnet = ControlNetModel.from_pretrained(controlnet_path, use_safetensors=True, torch_dtype=torch.float16).to(device)
 
 # config = UNet2DConditionModel.load_config(config_path)
 # unet = UNet2DConditionModel.from_config(config).to(device, torch.float16)
@@ -226,7 +225,7 @@ with block:
             with gr.Column():
                 with gr.Column():
                     src_image_pil = gr.Image(label="Source Image (optional)", type='pil')
-                    control_scale = gr.Slider(minimum=0,maximum=1.0, step=0.01,value=0.5, label="Controlnet conditioning scale")
+                    control_scale = gr.Slider(minimum=0,maximum=1.0, step=0.01,value=0.65, label="Controlnet conditioning scale")
                     
                     n_prompt = gr.Textbox(label="Neg Prompt", value="text, watermark, lowres, low quality, worst quality, deformed, glitch, low contrast, noisy, saturation, blurry")
                     
@@ -251,9 +250,9 @@ with block:
                 prompt = gr.Textbox(label="Prompt",
                                     value="masterpiece, best quality, high quality")
                 
-                style_blocks = gr.Textbox(label="Style Blocks", value="0")
+                style_blocks = gr.Textbox(label="Style Blocks", value="0, 2, 3")
 
-                layout_blocks = gr.Textbox(label="Layout Blocks", value="1")
+                layout_blocks = gr.Textbox(label="Layout Blocks", value="1, 3")
 
                 scale = gr.Slider(minimum=0,maximum=2.0, step=0.01,value=1.0, label="Scale")
                 

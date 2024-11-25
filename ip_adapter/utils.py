@@ -35,7 +35,7 @@ def upscale(attn_map, target_size):
     attn_map = attn_map.view(attn_map.shape[0], *temp_size)
 
     attn_map = F.interpolate(
-        attn_map.unsqueeze(0).to(dtype=torch.float32),
+        attn_map.unsqueeze(0).to(dtype=torch.float16),
         size=target_size,
         mode='bilinear',
         align_corners=False
