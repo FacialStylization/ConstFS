@@ -3,24 +3,27 @@ import torch
 import argparse
 import numpy as np
 
-from diffusers import StableDiffusionXLPipeline, ControlNetModel
+from diffusers import StableDiffusionXLControlNetPipeline, ControlNetModel
 from PIL import Image
 
 from pipeline import IPAdapterXL
+
 
 class StyleTransfer:
     def __init__(self, style_path, content_path):
         self.style_path = style_path
         self.content_path = content_path
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        
+
         base_model_path = "stabilityai/stable-diffusion-xl-base-1.0"
         image_encoder_path = "IP-Adapter/sdxl_models/image_encoder"
         ip_ckpt = "IP-Adapter/sdxl_models/ip-adapter_sdxl.bin"
         controlnet_path = "models/canny"
-        controlnet = ControlNetModel.from_pretrained(controlnet_path, use_safetensors=False, torch_dtype=torch.float16).to(self.device)
+        controlnet = ControlNetModel.from_pretrained(
+            controlnet_path, use_safetensors=False, torch_dtype=torch.float16
+        ).to(self.device)
         # load SDXL pipeline
-        self.pipe = StableDiffusionXLPipeline.from_pretrained(
+        self.pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
             base_model_path,
             controlnet=controlnet,
             torch_dtype=torch.float16,
@@ -31,8 +34,18 @@ class StyleTransfer:
         # load ip-adapter
         # target_blocks=["block"] for original IP-Adapter
         # target_blocks=["up_blocks.0.attentions.1"] for style blocks only
-        target_blocks = ["up_blocks.0.attentions.1", "down_blocks.2.attentions.1"] # for style+layout blocks
-        self.ip_model = IPAdapterXL(self.pipe, image_encoder_path, ip_ckpt, self.device, num_tokens=4, target_blocks=target_blocks)
+        target_blocks = [
+            "up_blocks.0.attentions.1",
+            "down_blocks.2.attentions.1",
+        ]  # for style+layout blocks
+        self.ip_model = IPAdapterXL(
+            self.pipe,
+            image_encoder_path,
+            ip_ckpt,
+            self.device,
+            num_tokens=4,
+            target_blocks=target_blocks,
+        )
 
     def resize_img(
         self,
@@ -74,7 +87,7 @@ class StyleTransfer:
     def generate(self):
         style_image = Image.open(self.style_path)
         style_image = self.resize_img(style_image, max_side=1024)
-        
+
         content_image = Image.open(self.content_path)
         content_image = self.resize_img(content_image, max_side=1024)
         cv_input_image = self.pil_to_cv2(content_image)
@@ -82,27 +95,29 @@ class StyleTransfer:
         canny_map = Image.fromarray(cv2.cvtColor(detected_map, cv2.COLOR_BGR2RGB))
 
         # generate image
-        images = self.ip_model.generate(pil_image=style_image,
-                                    prompt="masterpiece, best quality, high quality",
-                                    negative_prompt= "text, watermark, lowres, low quality, worst quality, deformed, glitch, low contrast, noisy, saturation, blurry",
-                                    scale=1.0,
-                                    guidance_scale=5,
-                                    num_samples=1,
-                                    num_inference_steps=20, 
-                                    seed=42,
-                                    pulid_image=cv_input_image,
-                                    image=canny_map,
-                                    controlnet_conditioning_scale=0.5,
-                                    )
-        
+        images = self.ip_model.generate(
+            pil_image=style_image,
+            prompt="masterpiece, best quality, high quality",
+            negative_prompt="text, watermark, lowres, low quality, worst quality, deformed, glitch, low contrast, noisy, saturation, blurry",
+            scale=1.0,
+            guidance_scale=5,
+            num_samples=1,
+            num_inference_steps=20,
+            seed=42,
+            pulid_image=cv_input_image,
+            image=canny_map,
+            controlnet_conditioning_scale=0.5,
+        )
+
         file_name = self.style_path.split("/")[-1].split(".")[0]
         output_path = f"results/{file_name}.png"
         images[0].save(output_path)
 
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Style transfer')
-    parser.add_argument('--style_path', type=str, help='Path to the style image')
-    parser.add_argument('--content_path', type=str, help='Path to the content image')
+    parser = argparse.ArgumentParser(description="Style transfer")
+    parser.add_argument("--style_path", type=str, help="Path to the style image")
+    parser.add_argument("--content_path", type=str, help="Path to the content image")
     args = parser.parse_args()
 
     style_transfer = StyleTransfer(args.style_path, args.content_path)
