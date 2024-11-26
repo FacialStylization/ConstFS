@@ -99,7 +99,7 @@ class StyleTransfer:
         detected_map = cv2.Canny(cv_input_image, 50, 200)
         canny_map = Image.fromarray(cv2.cvtColor(detected_map, cv2.COLOR_BGR2RGB))
 
-        prompt = create_prompt(self.style_path, self.content_path)
+        prompt = self.create_prompt(self.style_path, self.content_path)
         # generate image
         images = self.ip_model.generate(
             pil_image=style_image,
