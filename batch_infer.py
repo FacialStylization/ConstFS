@@ -4,11 +4,12 @@ import torch
 import argparse
 import numpy as np
 
+from ConstFS.app import create_prompt
 from diffusers import StableDiffusionXLControlNetPipeline, ControlNetModel
 from PIL import Image
 
 from pipeline import IPAdapterXL
-
+from utils.image_captioner import ImageCaptioner
 
 class StyleTransfer:
     def __init__(self, style_folder_path, content_folder_path):
@@ -85,6 +86,11 @@ class StyleTransfer:
         image_cv2 = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
         return image_cv2
 
+    def create_prompt(self, style_image_path, content_image_path):
+        image_captioner = ImageCaptioner(style_image_path, content_image_path)
+        prompt = image_captioner.generate_prompt()
+        return prompt
+    
     def generate(self):
         style_files = os.listdir(self.style_folder_path)
         for style_file in style_files:
@@ -103,10 +109,11 @@ class StyleTransfer:
             detected_map = cv2.Canny(cv_input_image, 50, 200)
             canny_map = Image.fromarray(cv2.cvtColor(detected_map, cv2.COLOR_BGR2RGB))
 
+            prompt = create_prompt(style_path, content_path)
             # generate image
             images = self.ip_model.generate(
                 pil_image=style_image,
-                prompt="masterpiece, best quality, high quality",
+                prompt=prompt,
                 negative_prompt="text, watermark, lowres, low quality, worst quality, deformed, glitch, low contrast, noisy, saturation, blurry",
                 scale=1.0,
                 guidance_scale=5,
