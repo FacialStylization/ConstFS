@@ -35,8 +35,8 @@ class StyleTransfer:
         # target_blocks=["block"] for original IP-Adapter
         # target_blocks=["up_blocks.0.attentions.1"] for style blocks only
         target_blocks = [
-            "up_blocks.0.attentions.1",
-            "down_blocks.2.attentions.1",
+            "up_blocks.0.attentions.1", "up_blocks.1.attentions.1"
+            "down_blocks.0.attentions.1", "down_blocks.2.attentions.1", 
         ]  # for style+layout blocks
         self.ip_model = IPAdapterXL(
             self.pipe,
