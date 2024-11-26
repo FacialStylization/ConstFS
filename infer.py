@@ -17,10 +17,10 @@ class StyleTransfer:
 
         base_model_path = "stabilityai/stable-diffusion-xl-base-1.0"
         image_encoder_path = "IP-Adapter/sdxl_models/image_encoder"
-        ip_ckpt = "IP-Adapter/sdxl_models/ip-adapter_sdxl.bin"
+        ip_ckpt = "IP-Adapter/sdxl_models/ip-adapter_sdxl.safetensors"
         controlnet_path = "models/canny"
         controlnet = ControlNetModel.from_pretrained(
-            controlnet_path, use_safetensors=False, torch_dtype=torch.float16
+            controlnet_path, use_safetensors=True, torch_dtype=torch.float16
         ).to(self.device)
         # load SDXL pipeline
         self.pipe = StableDiffusionXLControlNetPipeline.from_pretrained(

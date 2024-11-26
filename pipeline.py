@@ -62,7 +62,7 @@ class IPAdapterXL(IPAdapter):
     """SDXL"""
 
     @torch.inference_mode()
-    def get_image_embeds(self, pil_image=None, clip_image_embeds=None, content_prompt_embeds=None, tiles=1):
+    def get_image_embeds(self, pil_image=None, clip_image_embeds=None, content_prompt_embeds=None, tiles=4):
         if pil_image is not None:
             if isinstance(pil_image, Image.Image):
                 pil_image = [pil_image]
