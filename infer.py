@@ -3,7 +3,6 @@ import torch
 import argparse
 import numpy as np
 
-from ConstFS.app import create_prompt
 from diffusers import StableDiffusionXLControlNetPipeline, ControlNetModel
 from PIL import Image
 
