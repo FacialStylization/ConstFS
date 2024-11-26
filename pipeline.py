@@ -77,22 +77,29 @@ class IPAdapterXL(IPAdapter):
             clip_image_embeds = clip_image_embeds - content_prompt_embeds.to(self.device, dtype=torch.float16)
             print(f"second clip_image_embeds shape: {clip_image_embeds.shape}")
 
-        # 检查 clip_image_embeds 的形状
-        if len(clip_image_embeds.shape) == 2:
-            # 假设第二维是特征维度，将其调整为四维
-            clip_image_embeds = clip_image_embeds.unsqueeze(1).unsqueeze(2)
-            print(f"Adjusted clip_image_embeds shape: {clip_image_embeds.shape}")
-
+    
         if tiles > 1:
+            # Split in tiles
             image_split = split_tiles(clip_image_embeds, tiles)
-            embeds_split = []
+
+            # Get the embeds for each tile
+            embeds_split = {"image_embeds": [], "penultimate_hidden_states": []}
             for tile in image_split:
-                tile_embeds = self.image_encoder(tile, output_hidden_states=True).hidden_states[-2]
-                embeds_split.append(tile_embeds)
-            clip_image_embeds = torch.cat(embeds_split, dim=0)
-            print(f"third clip_image_embeds shape: {clip_image_embeds.shape}")
-            clip_image_embeds = merge_embeddings(clip_image_embeds, tiles)
-            print(f"fouth last clip_image_embeds shape: {clip_image_embeds.shape}")
+                encoded = self.image_encoder(tile, output_hidden_states=True)
+                embeds_split["image_embeds"].append(encoded.image_embeds)
+                embeds_split["penultimate_hidden_states"].append(encoded.hidden_states[-2])
+
+                # Concatenate the embeddings
+                embeds_split["image_embeds"] = torch.cat(embeds_split["image_embeds"], dim=0)
+                embeds_split["penultimate_hidden_states"] = torch.cat(embeds_split["penultimate_hidden_states"], dim=0)
+
+                # Merge the embeddings
+                embeds_split["image_embeds"] = merge_embeddings(embeds_split["image_embeds"], tiles)
+                embeds_split["penultimate_hidden_states"] = merge_embeddings(embeds_split["penultimate_hidden_states"], tiles)
+
+                # Update the clip_image_embeds
+                clip_image_embeds = embeds_split["image_embeds"]
+                print(f"third clip_image_embeds shape: {clip_image_embeds.shape}")
 
         print(f"last clip_image_embeds shape: {clip_image_embeds.shape}")
 
@@ -198,3 +205,4 @@ class IPAdapterXL(IPAdapter):
         ).images
     
         return images
+        
