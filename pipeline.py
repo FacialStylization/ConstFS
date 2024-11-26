@@ -77,6 +77,12 @@ class IPAdapterXL(IPAdapter):
             clip_image_embeds = clip_image_embeds - content_prompt_embeds.to(self.device, dtype=torch.float16)
             print(f"second clip_image_embeds shape: {clip_image_embeds.shape}")
 
+        # 检查 clip_image_embeds 的形状
+        if len(clip_image_embeds.shape) == 2:
+            # 假设第二维是特征维度，将其调整为四维
+            clip_image_embeds = clip_image_embeds.unsqueeze(1).unsqueeze(2)
+            print(f"Adjusted clip_image_embeds shape: {clip_image_embeds.shape}")
+
         if tiles > 1:
             image_split = split_tiles(clip_image_embeds, tiles)
             embeds_split = []
@@ -192,4 +198,3 @@ class IPAdapterXL(IPAdapter):
         ).images
     
         return images
-        
