@@ -19,6 +19,12 @@ def get_generator(seed, device):
     return generator
 
 def split_tiles(embeds, num_split):
+    if len(embeds.shape) == 2:
+        batch_size, channels = embeds.shape
+        height = width = int(channels ** 0.5)
+        embeds = embeds.view(batch_size, height, width, -1)
+        print(f"Adjusted embeds shape: {embeds.shape}")
+
     _, H, W, _ = embeds.shape
     out = []
     for x in embeds:
@@ -30,7 +36,7 @@ def split_tiles(embeds, num_split):
     x_split = torch.stack(out, dim=0)
         
     return x_split
-
+        
 def merge_embeddings(x, tiles):
     chunk_size = tiles * tiles
     x = x.split(chunk_size)
