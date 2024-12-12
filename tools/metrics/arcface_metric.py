@@ -4,13 +4,14 @@ import torch.nn.functional as F
 from torchvision import transforms
 from PIL import Image
 from insightface.app import FaceAnalysis
+import insightface
 import numpy as np
 
 
 class ArcFaceMetric:
     def __init__(self, model_name="buffalo_l", ctx_id=0):
         # 初始化 ArcFace 模型
-        self.app = FaceAnalysis(name=model_name)
+        self.app = FaceAnalysis(model_name)
         self.app.prepare(ctx_id=ctx_id)
 
         # 图像预处理
