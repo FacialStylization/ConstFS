@@ -8,7 +8,7 @@ from diffusers import StableDiffusionXLControlNetPipeline, ControlNetModel
 from PIL import Image
 
 from pipeline import IPAdapterXL
-
+from utils.image_captioner import ImageCaptioner
 
 class StyleTransfer:
     def __init__(self, style_folder_path, content_folder_path):
@@ -18,10 +18,10 @@ class StyleTransfer:
 
         base_model_path = "stabilityai/stable-diffusion-xl-base-1.0"
         image_encoder_path = "IP-Adapter/sdxl_models/image_encoder"
-        ip_ckpt = "IP-Adapter/sdxl_models/ip-adapter_sdxl.bin"
+        ip_ckpt = "IP-Adapter/sdxl_models/ip-adapter_sdxl.safetensors"
         controlnet_path = "models/canny"
         controlnet = ControlNetModel.from_pretrained(
-            controlnet_path, use_safetensors=False, torch_dtype=torch.float16
+            controlnet_path, use_safetensors=True, torch_dtype=torch.float16
         ).to(self.device)
         # load SDXL pipeline
         self.pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
@@ -85,6 +85,11 @@ class StyleTransfer:
         image_cv2 = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
         return image_cv2
 
+    def create_prompt(self, style_image_path, content_image_path):
+        image_captioner = ImageCaptioner(style_image_path, content_image_path)
+        prompt = image_captioner.generate_prompt()
+        return prompt
+    
     def generate(self):
         style_files = os.listdir(self.style_folder_path)
         for style_file in style_files:
@@ -103,10 +108,11 @@ class StyleTransfer:
             detected_map = cv2.Canny(cv_input_image, 50, 200)
             canny_map = Image.fromarray(cv2.cvtColor(detected_map, cv2.COLOR_BGR2RGB))
 
+            prompt = self.create_prompt(style_path, content_path)
             # generate image
             images = self.ip_model.generate(
                 pil_image=style_image,
-                prompt="masterpiece, best quality, high quality",
+                prompt=prompt,
                 negative_prompt="text, watermark, lowres, low quality, worst quality, deformed, glitch, low contrast, noisy, saturation, blurry",
                 scale=1.0,
                 guidance_scale=5,

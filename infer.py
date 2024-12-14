@@ -7,7 +7,7 @@ from diffusers import StableDiffusionXLControlNetPipeline, ControlNetModel
 from PIL import Image
 
 from pipeline import IPAdapterXL
-
+from utils.image_captioner import ImageCaptioner
 
 class StyleTransfer:
     def __init__(self, style_path, content_path):
@@ -17,10 +17,10 @@ class StyleTransfer:
 
         base_model_path = "stabilityai/stable-diffusion-xl-base-1.0"
         image_encoder_path = "IP-Adapter/sdxl_models/image_encoder"
-        ip_ckpt = "IP-Adapter/sdxl_models/ip-adapter_sdxl.bin"
+        ip_ckpt = "IP-Adapter/sdxl_models/ip-adapter_sdxl.safetensors"
         controlnet_path = "models/canny"
         controlnet = ControlNetModel.from_pretrained(
-            controlnet_path, use_safetensors=False, torch_dtype=torch.float16
+            controlnet_path, use_safetensors=True, torch_dtype=torch.float16
         ).to(self.device)
         # load SDXL pipeline
         self.pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
@@ -35,8 +35,8 @@ class StyleTransfer:
         # target_blocks=["block"] for original IP-Adapter
         # target_blocks=["up_blocks.0.attentions.1"] for style blocks only
         target_blocks = [
-            "up_blocks.0.attentions.1",
-            "down_blocks.2.attentions.1",
+            "up_blocks.0.attentions.1", "up_blocks.1.attentions.1"
+            "down_blocks.0.attentions.1", "down_blocks.2.attentions.1", 
         ]  # for style+layout blocks
         self.ip_model = IPAdapterXL(
             self.pipe,
@@ -84,6 +84,11 @@ class StyleTransfer:
         image_cv2 = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
         return image_cv2
 
+    def create_prompt(self, style_image_path, content_image_path):
+        image_captioner = ImageCaptioner(style_image_path, content_image_path)
+        prompt = image_captioner.generate_prompt()
+        return prompt
+
     def generate(self):
         style_image = Image.open(self.style_path)
         style_image = self.resize_img(style_image, max_side=1024)
@@ -94,10 +99,11 @@ class StyleTransfer:
         detected_map = cv2.Canny(cv_input_image, 50, 200)
         canny_map = Image.fromarray(cv2.cvtColor(detected_map, cv2.COLOR_BGR2RGB))
 
+        prompt = self.create_prompt(self.style_path, self.content_path)
         # generate image
         images = self.ip_model.generate(
             pil_image=style_image,
-            prompt="masterpiece, best quality, high quality",
+            prompt=prompt,
             negative_prompt="text, watermark, lowres, low quality, worst quality, deformed, glitch, low contrast, noisy, saturation, blurry",
             scale=1.0,
             guidance_scale=5,

@@ -19,6 +19,12 @@ def get_generator(seed, device):
     return generator
 
 def split_tiles(embeds, num_split):
+    if len(embeds.shape) == 2:
+        batch_size, channels = embeds.shape
+        height = width = int(channels ** 0.5)
+        embeds = embeds.view(batch_size, height, width, -1)
+        print(f"Adjusted embeds shape: {embeds.shape}")
+
     _, H, W, _ = embeds.shape
     out = []
     for x in embeds:
@@ -30,7 +36,7 @@ def split_tiles(embeds, num_split):
     x_split = torch.stack(out, dim=0)
         
     return x_split
-
+        
 def merge_embeddings(x, tiles):
     chunk_size = tiles * tiles
     x = x.split(chunk_size)
@@ -62,7 +68,7 @@ class IPAdapterXL(IPAdapter):
     """SDXL"""
 
     @torch.inference_mode()
-    def get_image_embeds(self, pil_image=None, clip_image_embeds=None, content_prompt_embeds=None, tiles=1):
+    def get_image_embeds_(self, pil_image=None, clip_image_embeds=None, content_prompt_embeds=None, tiles=4):
         if pil_image is not None:
             if isinstance(pil_image, Image.Image):
                 pil_image = [pil_image]
@@ -77,16 +83,29 @@ class IPAdapterXL(IPAdapter):
             clip_image_embeds = clip_image_embeds - content_prompt_embeds.to(self.device, dtype=torch.float16)
             print(f"second clip_image_embeds shape: {clip_image_embeds.shape}")
 
+    
         if tiles > 1:
+            # Split in tiles
             image_split = split_tiles(clip_image_embeds, tiles)
-            embeds_split = []
+
+            # Get the embeds for each tile
+            embeds_split = {"image_embeds": [], "penultimate_hidden_states": []}
             for tile in image_split:
-                tile_embeds = self.image_encoder(tile, output_hidden_states=True).hidden_states[-2]
-                embeds_split.append(tile_embeds)
-            clip_image_embeds = torch.cat(embeds_split, dim=0)
-            print(f"third clip_image_embeds shape: {clip_image_embeds.shape}")
-            clip_image_embeds = merge_embeddings(clip_image_embeds, tiles)
-            print(f"fouth last clip_image_embeds shape: {clip_image_embeds.shape}")
+                encoded = self.image_encoder(tile, output_hidden_states=True)
+                embeds_split["image_embeds"].append(encoded.image_embeds)
+                embeds_split["penultimate_hidden_states"].append(encoded.hidden_states[-2])
+
+                # Concatenate the embeddings
+                embeds_split["image_embeds"] = torch.cat(embeds_split["image_embeds"], dim=0)
+                embeds_split["penultimate_hidden_states"] = torch.cat(embeds_split["penultimate_hidden_states"], dim=0)
+
+                # Merge the embeddings
+                embeds_split["image_embeds"] = merge_embeddings(embeds_split["image_embeds"], tiles)
+                embeds_split["penultimate_hidden_states"] = merge_embeddings(embeds_split["penultimate_hidden_states"], tiles)
+
+                # Update the clip_image_embeds
+                clip_image_embeds = embeds_split["image_embeds"]
+                print(f"third clip_image_embeds shape: {clip_image_embeds.shape}")
 
         print(f"last clip_image_embeds shape: {clip_image_embeds.shape}")
 
