@@ -1,6 +1,6 @@
 import argparse
 import os
-from tools.metrics.arcface_metric_0 import ArcFaceMetric
+from tools.metrics.curricularface_metric import CurricularFace
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
@@ -8,15 +8,17 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 def evaluate(style_images_folder, content_images_folder, stylized_images_folder):
     # Evaluate art_fid
     art_fid_command = f"python -m art_fid --style_images {style_images_folder} --content_images {content_images_folder} --stylized_images {stylized_images_folder}"
-    os.system(art_fid_command)
+    # os.system(art_fid_command)
 
     # Evaluate clip_score
     clip_score_command = f"python -m clip_score {style_images_folder} {stylized_images_folder} --real_flag img --fake_flag img"
-    os.system(clip_score_command)
+    # os.system(clip_score_command
 
     # Evaluate arcface_distance
-    arc_margin_product = ArcFaceMetric()
-    arc_margin_product.evaluate_folders(content_images_folder, stylized_images_folder)
+    arc_margin_product = CurricularFace()
+    arc_margin_product.calculate_folder_curricular_face_dist(
+        content_images_folder, stylized_images_folder
+    )
 
 
 if __name__ == "__main__":
